@@ -2,7 +2,7 @@
 
 This is a **SQL-based Library Management System** that tracks books, members, and borrowing records. It includes **database schema, sample data, and useful queries** for managing a library efficiently.
 
-![Library Management Banner](https://user-images.githubusercontent.com/yourusername/library-banner.png) *(Optional: Add an image here)*
+![Library Management Banner](https://user-images.githubusercontent.com/yourusername/library-banner.png)
 
 ## 📌 Features
 - Store and manage books, members, and borrowing history.
