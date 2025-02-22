@@ -1,0 +1,97 @@
+-- Table: Books
+-- This table stores information about the books in the library.
+CREATE TABLE Books (
+    BookID INT PRIMARY KEY AUTO_INCREMENT,  -- Unique identifier for each book
+    Title VARCHAR(255) NOT NULL,            -- Title of the book
+    Author VARCHAR(255) NOT NULL,           -- Author of the book
+    Genre VARCHAR(100),                     -- Genre of the book (e.g., Fiction, Dystopian)
+    PublishedYear INT,                      -- Year the book was published
+    Available BOOLEAN DEFAULT TRUE          -- Indicates whether the book is available for borrowing
+);
+
+-- Table: Members
+-- This table stores information about the library members.
+CREATE TABLE Members (
+    MemberID INT PRIMARY KEY AUTO_INCREMENT,  -- Unique identifier for each member
+    FirstName VARCHAR(100) NOT NULL,          -- First name of the member
+    LastName VARCHAR(100) NOT NULL,           -- Last name of the member
+    Email VARCHAR(255) UNIQUE,                -- Email address of the member (must be unique)
+    JoinDate DATE DEFAULT CURRENT_DATE        -- Date the member joined the library
+);
+
+-- Table: BorrowingRecords
+-- This table tracks which books have been borrowed by which members.
+CREATE TABLE BorrowingRecords (
+    RecordID INT PRIMARY KEY AUTO_INCREMENT,  -- Unique identifier for each borrowing record
+    BookID INT,                               -- Foreign key referencing the Books table
+    MemberID INT,                             -- Foreign key referencing the Members table
+    BorrowDate DATE DEFAULT CURRENT_DATE,     -- Date the book was borrowed
+    ReturnDate DATE,                          -- Date the book was returned (NULL if not yet returned)
+    FOREIGN KEY (BookID) REFERENCES Books(BookID),  -- Ensures the BookID exists in the Books table
+    FOREIGN KEY (MemberID) REFERENCES Members(MemberID)  -- Ensures the MemberID exists in the Members table
+);
+
+-- Insert sample books into the Books table
+INSERT INTO Books (Title, Author, Genre, PublishedYear) VALUES
+('The Great Gatsby', 'F. Scott Fitzgerald', 'Fiction', 1925),  -- Book 1
+('To Kill a Mockingbird', 'Harper Lee', 'Fiction', 1960),      -- Book 2
+('1984', 'George Orwell', 'Dystopian', 1949);                  -- Book 3
+
+-- Insert sample members into the Members table
+INSERT INTO Members (FirstName, LastName, Email) VALUES
+('John', 'Doe', 'john.doe@example.com'),  -- Member 1
+('Jane', 'Smith', 'jane.smith@example.com');  -- Member 2
+
+-- Insert sample borrowing records into the BorrowingRecords table
+INSERT INTO BorrowingRecords (BookID, MemberID, BorrowDate) VALUES
+(1, 1, '2023-10-01'),  -- John borrowed "The Great Gatsby" on October 1, 2023
+(2, 2, '2023-10-05');  -- Jane borrowed "To Kill a Mockingbird" on October 5, 2023
+
+-- Query 1: List all books in the library
+SELECT * FROM Books;
+
+-- Query 2: Find all books by a specific author (e.g., George Orwell)
+SELECT * FROM Books WHERE Author = 'George Orwell';
+
+-- Query 3: List all members who joined in 2023
+SELECT * FROM Members WHERE YEAR(JoinDate) = 2023;
+
+-- Query 4: Find all books currently borrowed (not yet returned)
+SELECT Books.Title, Members.FirstName, Members.LastName, BorrowingRecords.BorrowDate
+FROM BorrowingRecords
+JOIN Books ON BorrowingRecords.BookID = Books.BookID  -- Join with Books table to get book details
+JOIN Members ON BorrowingRecords.MemberID = Members.MemberID  -- Join with Members table to get member details
+WHERE BorrowingRecords.ReturnDate IS NULL;  -- Filter for books that haven't been returned
+
+-- Query 5: Update a book’s availability after it’s returned
+UPDATE Books
+SET Available = TRUE  -- Mark the book as available
+WHERE BookID = 1;     -- Update the book with BookID = 1
+
+UPDATE BorrowingRecords
+SET ReturnDate = CURRENT_DATE  -- Set the return date to today
+WHERE BookID = 1 AND MemberID = 1;  -- Update the borrowing record for BookID = 1 and MemberID = 1
+
+-- Query 6: Count the number of books borrowed by each member
+SELECT Members.FirstName, Members.LastName, COUNT(BorrowingRecords.RecordID) AS BooksBorrowed
+FROM Members
+LEFT JOIN BorrowingRecords ON Members.MemberID = BorrowingRecords.MemberID  -- Join with BorrowingRecords
+GROUP BY Members.MemberID;  -- Group results by member
+
+-- Search for books by title, author, or genre
+SELECT * FROM Books
+WHERE Title LIKE '%Gatsby%' OR Author LIKE '%Fitzgerald%' OR Genre LIKE '%Fiction%';
+
+-- Find books borrowed more than 30 days ago that haven't been returned
+SELECT Books.Title, Members.FirstName, Members.LastName, BorrowingRecords.BorrowDate
+FROM BorrowingRecords
+JOIN Books ON BorrowingRecords.BookID = Books.BookID
+JOIN Members ON BorrowingRecords.MemberID = Members.MemberID
+WHERE BorrowingRecords.ReturnDate IS NULL AND DATEDIFF(CURRENT_DATE, BorrowingRecords.BorrowDate) > 30;
+
+-- Show the most popular genres based on borrowing records
+SELECT Books.Genre, COUNT(BorrowingRecords.RecordID) AS BorrowCount
+FROM BorrowingRecords
+JOIN Books ON BorrowingRecords.BookID = Books.BookID
+GROUP BY Books.Genre
+ORDER BY BorrowCount DESC;
